@@ -51,7 +51,7 @@ type DecoratedText struct {
 
 // at this point a document can be represented by a sequence of DecoratedText structs
 
-func (colour *TextColour) String() string {
+func (colour TextColour) String() string {
 	/* no breaks needed in switch statement, use 'fallthrough' keyword
 	 * when you really need that behaviour. also switch works on pretty
 	 * much any type :) */
@@ -73,7 +73,7 @@ func (colour *TextColour) String() string {
 	case K:
 		return "K"
 	}
-	panic("unknown colour ", colour)
+	panic(colour)
 }
 
 func choose(cond bool, t rune, f rune) rune {
@@ -94,7 +94,7 @@ func underlineStr(underline int) string {
 	case 3:
 		return "≡"
 	}
-	panic("invalid underline state ", underline)
+	panic(underline)
 }
 
 func (d *Decoration) String() string {
@@ -106,5 +106,5 @@ func (d *Decoration) String() string {
 		choose(d.Tt, 'T', 't'),
 		underlineStr(d.U),
 		d.Size,
-		d.Colour)
+		d.Color)
 }
