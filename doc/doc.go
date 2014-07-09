@@ -1,6 +1,7 @@
 package doc
 
 import (
+	"strconv"
 	"fmt"
 )
 
@@ -38,6 +39,71 @@ type Decoration struct {
 	U     int
 	Size  int
 	Color TextColour
+}
+
+func (d Decoration) copy() Decoration {
+	return Decoration{d.B, d.Em, d.I, d.S, d.Tt, d.U, d.Size, d.Color}
+}
+
+func (a Decoration) Equals(b Decoration) bool {
+	return a.B == b.B &&
+		(a.S || a.Em == b.Em) &&
+		a.I == b.I &&
+		a.S == b.S &&
+		a.Tt == b.Tt &&
+		a.U == b.U &&
+		a.Size == b.Size &&
+		a.Color == b.Color
+}
+
+/* Returns the new Decoration state achieved by applying the provided tags */
+func (src Decoration) Apply(tags ...string) Decoration {
+	out := src.copy()
+	for _, tag := range(tags) {
+		switch tag {
+		case "B":
+			out.B = true
+		case "EM":
+			out.Em = !src.Em
+		case "I":
+			out.I = true
+		case "PL":
+			out.U = 0
+			out.B = false
+			out.Em = false
+			out.S = false
+			out.Tt = false
+		case "S":
+			out.S = true
+		case "TT":
+			out.Tt = true
+		case "U":
+			if out.U < 3 {
+				out.U++
+			}
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+			out.Size, _ = strconv.Atoi(tag)
+		case "w":
+			out.Color = W
+		case "r":
+			out.Color = R
+		case "g":
+			out.Color = G
+		case "b":
+			out.Color = B
+		case "c":
+			out.Color = C
+		case "y":
+			out.Color = Y
+		case "m":
+			out.Color = M
+		case "k":
+			out.Color = K
+		default:
+			panic(tag)
+		}
+	}
+	return out
 }
 
 type DecoratedText struct {
