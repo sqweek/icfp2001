@@ -28,8 +28,9 @@ func ChooseStr(cond bool, t string, f string) string {
 	return f
 }
 
-func parse(s string) []*doc.DecoratedText {
-	var document []*doc.DecoratedText
+func parse(s string) doc.Document {
+	//var document []*doc.DecoratedText
+	var document doc.Document
 	
 	var context stack
 	var current doc.Decoration
@@ -42,7 +43,9 @@ func parse(s string) []*doc.DecoratedText {
 			text += string(s[i])
 		} else {
 			fmt.Println("text: '"+text+"'")
-			document = append(document, doc.NewDecoratedText(current, text))
+			if len(text)>0 {
+				document.Parts = append(document.Parts, doc.NewDecoratedText(current, text))
+			}
 			text =""
 			
 			token := ""
@@ -75,10 +78,10 @@ func parse(s string) []*doc.DecoratedText {
 	return document
 }
 
-const s1 = "<r>  xxx </r><b> yyy  </b>"
+const s1 = "<r>  xxx </r><r>asdf</r><b> yyy  </b>"
 func main() {
-	document := parse(s1)
-	for _, block := range(document) {
+	document := parse(s1).Compact()
+	for _, block := range(document.Parts) {
 		fmt.Println(block)
 	}
 }

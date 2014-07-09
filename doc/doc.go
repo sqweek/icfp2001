@@ -46,6 +46,15 @@ func (d Decoration) copy() Decoration {
 	return Decoration{d.B, d.Em, d.I, d.S, d.Tt, d.U, d.Size, d.Color}
 }
 
+type Document struct{
+	Parts []*DecoratedText
+}
+
+//func (a Decoration) Compare(b Decoration) bool {
+//	
+//	
+//}
+
 func (a Decoration) Equals(b Decoration) bool {
 	return a.B == b.B &&
 		(a.S || a.Em == b.Em) &&
@@ -55,6 +64,26 @@ func (a Decoration) Equals(b Decoration) bool {
 		a.U == b.U &&
 		a.Size == b.Size &&
 		a.Color == b.Color
+}
+
+func (document Document) Compact() Document {
+	
+	var document2 Document
+	var last *DecoratedText
+	
+	for  _,current := range document.Parts {
+		if last == nil {
+			last = current
+		} else if last.Decoration.Equals(current.Decoration) {
+			last.Tokens = append(last.Tokens, current.Tokens...)
+		} else {
+			document2.Parts = append(document2.Parts, last)
+			last = current
+		}
+	}
+	
+	document2.Parts = append(document2.Parts, last)
+	return document2
 }
 
 /* Returns the new Decoration state achieved by applying the provided tags */
