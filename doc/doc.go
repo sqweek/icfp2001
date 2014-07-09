@@ -66,6 +66,111 @@ func (a Decoration) Equals(b Decoration) bool {
 		a.Color == b.Color
 }
 
+func DefaultDecoration() Decoration {
+	return Decoration{false,false,false,false,false,0,0,W}
+}
+
+type StackStr []string
+func (s StackStr) Empty() bool { return len(s) == 0 }
+func (s StackStr) Peek() string   { return s[len(s)-1] }
+func (s *StackStr) Push(i string)  { (*s) = append((*s), i) }
+func (s *StackStr) Pop() string {
+	d := (*s)[len(*s)-1]
+	(*s) = (*s)[:len(*s)-1]
+	return d
+}
+
+
+type Stack []Decoration
+func (s Stack) Empty() bool { return len(s) == 0 }
+func (s Stack) Peek() Decoration   { return s[len(s)-1] }
+func (s *Stack) Push(i Decoration)  { (*s) = append((*s), i) }
+func (s *Stack) Pop() Decoration {
+	d := (*s)[len(*s)-1]
+	(*s) = (*s)[:len(*s)-1]
+	return d
+}
+func (d Decoration) TagsTo(d2 Decoration,  tagStack StackStr) ([]string, StackStr) {
+	var tags []string
+	//bold
+	fmt.Println("d1:"+d.String()+", d2:"+d2.String())
+	if d.B != d2.B{
+		if d.B==true {
+			tag := tagStack.Pop()
+			for tag != "B" {
+				fmt.Println("tag:"+tag)
+				tags = append(tags, "/"+tag)
+				if tagStack.Empty() {
+					break
+				}
+				tag = tagStack.Pop()
+			}
+			tags = append(tags, "/B")
+		} else {
+			tagStack.Push("B")
+			tags = append(tags, "B")
+		}
+	}
+	
+	//EM
+	if d.Em!=d2.Em {
+		tagStack.Push("Em")
+		tags = append(tags,"Em")
+	}
+	
+	
+	//colours
+	if d.Color != d2.Color {
+		tagStack.Push(strings.ToLower(d2.Color.String()))
+		tags = append(tags, strings.ToLower(d2.Color.String()))
+	}
+	return tags, tagStack
+}
+func (d Decoration) NTagsTo(d2 Decoration, tagStack StackStr) int {
+	tags,_ := d.TagsTo(d2,tagStack)
+	return len(tags)
+}
+
+
+func (document Document) GenerateSML() string {
+	
+	result := ""
+	var tagStack StackStr
+	
+	current := DefaultDecoration()
+	
+	for _,part := range document.Parts {
+		
+		next := part.Decoration
+		if next.Equals(current) == false {
+			
+			//min,_ := current.NTagsTo(next,tagStack)
+			//should step back up the stack to check if there's a quicker way
+			var tags StackStr
+			fmt.Println("tagstack before:"+strings.Join(tagStack,","))
+			tags,tagStack = current.TagsTo(next, tagStack)
+			fmt.Println("tagstack after:"+strings.Join(tagStack,","))
+			//need to search ahead to optimize the order of tags
+			
+			for _,tag := range tags {
+				result += "<"+tag+">"
+			}
+			
+			current = next
+			
+		}
+		
+		result += strings.Join(part.Tokens,"")
+			
+	}
+	
+	for tagStack.Empty()==false {
+		result += "</"+tagStack.Pop()+">"
+	}
+	
+	return result
+}
+
 func (document Document) Compact() Document {
 	
 	var document2 Document
