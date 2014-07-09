@@ -28,10 +28,8 @@ func ChooseStr(cond bool, t string, f string) string {
 	return f
 }
 
-func describe(s string){
-	
-	texts := make([]string, 100,100)
-	decs := make([]doc.Decoration, 100,100)
+func parse(s string) []*doc.DecoratedText {
+	var document []*doc.DecoratedText
 	
 	var context stack
 	var current doc.Decoration
@@ -44,8 +42,7 @@ func describe(s string){
 			text += string(s[i])
 		} else {
 			fmt.Println("text: '"+text+"'")
-			texts = append(texts,text)
-			decs = append(decs,current)
+			document = append(document, doc.NewDecoratedText(current, text))
 			text =""
 			
 			token := ""
@@ -75,9 +72,13 @@ func describe(s string){
 			fmt.Println("token: '"+ChooseStr(isEndToken==true,"/","")+token+"'")
 		}
 	}
+	return document
 }
 
 const s1 = "<r>  xxx </r><b> yyy  </b>"
 func main() {
-	describe(s1)
+	document := parse(s1)
+	for _, block := range(document) {
+		fmt.Println(block)
+	}
 }

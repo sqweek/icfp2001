@@ -1,8 +1,9 @@
 package doc
 
 import (
-	"strconv"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type TextColour int
@@ -59,7 +60,7 @@ func (a Decoration) Equals(b Decoration) bool {
 /* Returns the new Decoration state achieved by applying the provided tags */
 func (src Decoration) Apply(tags ...string) Decoration {
 	out := src.copy()
-	for _, tag := range(tags) {
+	for _, tag := range tags {
 		switch tag {
 		case "B":
 			out.B = true
@@ -117,6 +118,16 @@ type DecoratedText struct {
 
 // at this point a document can be represented by a sequence of DecoratedText structs
 
+func NewDecoratedText(d Decoration, text string) *DecoratedText {
+	var tokens []string
+	if d.Tt {
+		tokens = append(tokens, text)
+	} else {
+		tokens = strings.Fields(text)
+	}
+	return &DecoratedText{d, tokens}
+}
+
 func (colour TextColour) String() string {
 	/* no breaks needed in switch statement, use 'fallthrough' keyword
 	 * when you really need that behaviour. also switch works on pretty
@@ -173,4 +184,8 @@ func (d *Decoration) String() string {
 		underlineStr(d.U),
 		d.Size,
 		d.Color)
+}
+
+func (d *DecoratedText) String() string {
+	return fmt.Sprintf("{%v} %v", &d.Decoration, d.Tokens)
 }
