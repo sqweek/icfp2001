@@ -180,7 +180,11 @@ func (document Document) Compact() Document {
 		if last == nil {
 			last = current
 		} else if last.Decoration.Equals(current.Decoration) {
-			last.Tokens = append(last.Tokens, current.Tokens...)
+			if last.Tt {
+				last.Tokens[0] += current.Tokens[0]
+			} else {
+				last.Tokens = append(last.Tokens, current.Tokens...)
+			}
 		} else {
 			document2.Parts = append(document2.Parts, last)
 			last = current

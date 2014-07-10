@@ -55,9 +55,6 @@ func parse(s string) doc.Document {
 				}
 			} else {
 				context.Push(current)
-				/* TODO easy optimisation here by checking if the new state
-				 * is the same as the existing state in which case the tag is
-				 * redundant and can be ignored. */
 				current = current.Apply(token)
 			}
 			fmt.Println("token: '"+ChooseStr(isEndToken==true,"/","")+token+"'")
