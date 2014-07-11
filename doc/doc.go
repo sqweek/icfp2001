@@ -160,7 +160,7 @@ func (document Document) GenerateSML() string {
 			
 		}
 		
-		result += strings.Join(part.Tokens,"")
+		result += strings.Join(part.Tokens," ")
 			
 	}
 	
