@@ -2,6 +2,7 @@ package doc
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -256,12 +257,19 @@ type DecoratedText struct {
 
 // at this point a document can be represented by a sequence of DecoratedText structs
 
+var reSpace *regexp.Regexp = regexp.MustCompile("[ \t\n\r\f]+")
+
+/* converts runs of whitespace into a single space */
+func collapseWhitespace(text string) string {
+	return reSpace.ReplaceAllLiteralString(text, " ")
+}
+
 func NewDecoratedText(d Decoration, text string) *DecoratedText {
 	var tokens []string
 	if d.Tt {
-		tokens = append(tokens, text)
+		tokens = []string{text}
 	} else {
-		tokens = strings.Fields(text)
+		tokens = strings.Split(collapseWhitespace(text), " ")
 	}
 	return &DecoratedText{d, tokens}
 }
