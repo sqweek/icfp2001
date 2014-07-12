@@ -7,25 +7,18 @@ import (
 	"strings"
 )
 
-type TextColour int
+type TextColour rune
 
-/* a const block defines multiple constants at once. 'iota' is a special
- * value that starts at zero and increments by one each time it is
- * evaluated. Note that if the type or value is left out of a constant
- * definition, the previous type/value is assumed. So even though
- * I've only explicitly referenced iota once, it's evaluated 8 times
- * and we get constants W=0 R=1 G=2 etc. */
 const (
-	/* Note that variables/struct fields are zeroed by default;
-	 * so I put W as the zero value rather. */
-	W TextColour = iota
-	R
-	G
-	B
-	C
-	M
-	Y
-	K
+	Def TextColour = '?' /* default colour */
+	W TextColour = 'w'
+	R TextColour = 'r'
+	G TextColour = 'g'
+	B TextColour = 'b'
+	C TextColour = 'c'
+	M TextColour = 'm'
+	Y TextColour = 'y'
+	K TextColour = 'k'
 )
 
 /* Go doesn't explicitly label symbols as public/private, but it does
@@ -68,17 +61,26 @@ func (a Decoration) Equals(b Decoration) bool {
 }
 
 func DefaultDecoration() Decoration {
-	return Decoration{false,false,false,false,false,0,0,W}
+	return Decoration{false,false,false,false,false,0,0,Def}
 }
 
-type StackStr []string
-func (s StackStr) Empty() bool { return len(s) == 0 }
-func (s StackStr) Peek() string   { return s[len(s)-1] }
-func (s *StackStr) Push(i string)  { (*s) = append((*s), i) }
-func (s *StackStr) Pop() string {
+type TagStack []string
+func (s TagStack) Empty() bool { return len(s) == 0 }
+func (s TagStack) Peek() string   { return s[len(s)-1] }
+func (s *TagStack) Push(i string)  { (*s) = append((*s), i) }
+func (s *TagStack) Pop() string {
 	d := (*s)[len(*s)-1]
 	(*s) = (*s)[:len(*s)-1]
 	return d
+}
+func (s *TagStack) HasColour() bool {
+	for _, tag := range *s {
+		switch tag {
+		case "w", "r", "g", "b", "c", "y", "m", "k":
+			return true
+		}
+	}
+	return false
 }
 
 
@@ -91,7 +93,7 @@ func (s *Stack) Pop() Decoration {
 	(*s) = (*s)[:len(*s)-1]
 	return d
 }
-func (d Decoration) TagsTo(d2 Decoration,  tagStack StackStr) ([]string, StackStr) {
+func (d Decoration) TagsTo(d2 Decoration,  tagStack TagStack) ([]string, TagStack) {
 	var tags []string
 	//bold
 	fmt.Println("d1:"+d.String()+", d2:"+d2.String())
@@ -122,12 +124,20 @@ func (d Decoration) TagsTo(d2 Decoration,  tagStack StackStr) ([]string, StackSt
 	
 	//colours
 	if d.Color != d2.Color {
-		tagStack.Push(strings.ToLower(d2.Color.String()))
-		tags = append(tags, strings.ToLower(d2.Color.String()))
+		if d2.Color == Def {
+			// keep popping until we get back to default colour
+			for tagStack.HasColour() {
+				tag := tagStack.Pop()
+				tags = append(tags, "/" + tag)
+			}
+		} else {
+			tagStack.Push(string(d2.Color))
+			tags = append(tags, string(d2.Color))
+		}
 	}
 	return tags, tagStack
 }
-func (d Decoration) NTagsTo(d2 Decoration, tagStack StackStr) int {
+func (d Decoration) NTagsTo(d2 Decoration, tagStack TagStack) int {
 	tags,_ := d.TagsTo(d2,tagStack)
 	return len(tags)
 }
@@ -136,7 +146,7 @@ func (d Decoration) NTagsTo(d2 Decoration, tagStack StackStr) int {
 func (document Document) GenerateSML() string {
 	
 	result := ""
-	var tagStack StackStr
+	var tagStack TagStack
 	
 	current := DefaultDecoration()
 	
@@ -147,7 +157,7 @@ func (document Document) GenerateSML() string {
 			
 			//min,_ := current.NTagsTo(next,tagStack)
 			//should step back up the stack to check if there's a quicker way
-			var tags StackStr
+			var tags TagStack
 			fmt.Println("tagstack before:"+strings.Join(tagStack,","))
 			tags,tagStack = current.TagsTo(next, tagStack)
 			fmt.Println("tagstack after:"+strings.Join(tagStack,","))
@@ -223,22 +233,8 @@ func (src Decoration) Apply(tags ...string) Decoration {
 			}
 		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			out.Size, _ = strconv.Atoi(tag)
-		case "w":
-			out.Color = W
-		case "r":
-			out.Color = R
-		case "g":
-			out.Color = G
-		case "b":
-			out.Color = B
-		case "c":
-			out.Color = C
-		case "y":
-			out.Color = Y
-		case "m":
-			out.Color = M
-		case "k":
-			out.Color = K
+		case "w", "r", "g", "b", "c", "y", "m", "k":
+			out.Color = TextColour(tag[0])
 		default:
 			panic(tag)
 		}
@@ -274,31 +270,6 @@ func NewDecoratedText(d Decoration, text string) *DecoratedText {
 	return &DecoratedText{d, tokens}
 }
 
-func (colour TextColour) String() string {
-	/* no breaks needed in switch statement, use 'fallthrough' keyword
-	 * when you really need that behaviour. also switch works on pretty
-	 * much any type :) */
-	switch colour {
-	case W:
-		return "W"
-	case R:
-		return "R"
-	case G:
-		return "G"
-	case B:
-		return "B"
-	case C:
-		return "C"
-	case M:
-		return "M"
-	case Y:
-		return "Y"
-	case K:
-		return "K"
-	}
-	panic(colour)
-}
-
 func choose(cond bool, t rune, f rune) rune {
 	if cond {
 		return t
@@ -321,7 +292,7 @@ func underlineStr(underline int) string {
 }
 
 func (d *Decoration) String() string {
-	return fmt.Sprintf("%c%c%c%c%c%s%d%v",
+	return fmt.Sprintf("%c%c%c%c%c%s%d%c",
 		choose(d.B, 'B', 'b'),
 		choose(d.Em, 'E', 'e'),
 		choose(d.I, 'I', 'i'),

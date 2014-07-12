@@ -21,7 +21,7 @@ func parse(s string) doc.Document {
 	var document doc.Document
 	
 	var context doc.Stack
-	var current doc.Decoration
+	var current doc.Decoration = doc.DefaultDecoration()
 	
 	text := ""
 	
