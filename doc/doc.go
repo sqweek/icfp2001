@@ -219,7 +219,9 @@ func (src Decoration) Apply(tags ...string) Decoration {
 		case "B":
 			out.B = true
 		case "EM":
-			out.Em = !src.Em
+			if !src.S {
+				out.Em = !src.Em
+			}
 		case "I":
 			out.I = true
 		case "PL":
@@ -230,6 +232,7 @@ func (src Decoration) Apply(tags ...string) Decoration {
 			out.Tt = false
 		case "S":
 			out.S = true
+			out.Em = false
 		case "TT":
 			out.Tt = true
 		case "U":
