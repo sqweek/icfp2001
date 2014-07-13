@@ -188,6 +188,9 @@ func (document Document) Compact() Document {
 	var last *DecoratedText
 	
 	for  _,current := range document.Parts {
+		if !current.HasContent() {
+			continue
+		}
 		if last == nil {
 			last = current
 		} else if last.Decoration.Equals(current.Decoration) {
@@ -201,8 +204,10 @@ func (document Document) Compact() Document {
 			last = current
 		}
 	}
-	
-	document2.Parts = append(document2.Parts, last)
+
+	if last.HasContent() {
+		document2.Parts = append(document2.Parts, last)
+	}
 	return document2
 }
 
@@ -249,6 +254,10 @@ type DecoratedText struct {
 	 * contain no whitespace, UNLESS the Tt flag is set in which
 	 * case there will only be a single token */
 	Tokens []string
+}
+
+func (dt *DecoratedText) HasContent() bool {
+	return !(len(dt.Tokens) == 0 || (dt.Tt && len(dt.Tokens[0]) == 0))
 }
 
 // at this point a document can be represented by a sequence of DecoratedText structs
