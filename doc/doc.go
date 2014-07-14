@@ -253,6 +253,7 @@ func (src Decoration) Apply(tags ...string) Decoration {
 			out.U = 0
 			out.B = false
 			out.Em = false
+			out.I = false
 			out.S = false
 			out.Tt = false
 		case "S":
@@ -273,6 +274,10 @@ func (src Decoration) Apply(tags ...string) Decoration {
 		}
 	}
 	return out
+}
+
+func (d Decoration) IsPlain() bool {
+	return !d.B && !d.S && !d.Em && !d.I && !d.Tt && d.U == 0
 }
 
 type DecoratedText struct {
