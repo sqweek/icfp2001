@@ -19,6 +19,8 @@ const (
 	M TextColour = 'm'
 	Y TextColour = 'y'
 	K TextColour = 'k'
+
+	DefSize = -1
 )
 
 /* Go doesn't explicitly label symbols as public/private, but it does
@@ -61,7 +63,7 @@ func (a Decoration) Equals(b Decoration) bool {
 }
 
 func DefaultDecoration() Decoration {
-	return Decoration{false,false,false,false,false,0,0,Def}
+	return Decoration{false,false,false,false,false,0,DefSize,Def}
 }
 
 type TagStack []string
@@ -77,6 +79,16 @@ func (s *TagStack) HasColour() bool {
 	for _, tag := range *s {
 		switch tag {
 		case "w", "r", "g", "b", "c", "y", "m", "k":
+			return true
+		}
+	}
+	return false
+}
+
+func (s *TagStack) HasTextSize() bool {
+	for _, tag := range *s {
+		switch tag {
+		case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
 			return true
 		}
 	}
@@ -135,6 +147,19 @@ func (d Decoration) TagsTo(d2 Decoration,  tagStack TagStack) ([]string, TagStac
 			tags = append(tags, string(d2.Color))
 		}
 	}
+
+	if d.Size != d2.Size {
+		if d2.Size == DefSize {
+			for tagStack.HasTextSize() {
+				tag := tagStack.Pop()
+				tags = append(tags, "/" + tag)
+			}
+		} else {
+			tagStack.Push(strconv.Itoa(d2.Size))
+			tags = append(tags, strconv.Itoa(d2.Size))
+		}
+	}
+
 	return tags, tagStack
 }
 func (d Decoration) NTagsTo(d2 Decoration, tagStack TagStack) int {
@@ -304,14 +329,20 @@ func underlineStr(underline int) string {
 }
 
 func (d *Decoration) String() string {
-	return fmt.Sprintf("%c%c%c%c%c%s%d%c",
+	var sz rune
+	if d.Size == DefSize {
+		sz = '¿'
+	} else {
+		sz = rune('0' + d.Size)
+	}
+	return fmt.Sprintf("%c%c%c%c%c%s%c%c",
 		choose(d.B, 'B', 'b'),
 		choose(d.Em, 'E', 'e'),
 		choose(d.I, 'I', 'i'),
 		choose(d.S, 'S', 's'),
 		choose(d.Tt, 'T', 't'),
 		underlineStr(d.U),
-		d.Size,
+		sz,
 		d.Color)
 }
 
