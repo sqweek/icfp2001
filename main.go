@@ -3,61 +3,63 @@ package main
 
 import (
 	"fmt"
-//	"strings"
+	"strings"
 	"github.com/sqweek/icfp2001/doc"
 )
 
+func tokens2chan(s string, tokens chan string) {
+	/* "defer" is kind of like "finally". When the expression drops out
+	 * of scope (ie when tokens2chan returns), close(tokens) will run */
+	defer close(tokens)
 
-
-func ChooseStr(cond bool, t string, f string) string {
-	if cond {
-		return t
+	i := 0 // token start index
+	for i < len(s) {
+		var j int // token length
+		if s[i] == '<' {
+			/* note j is the position relative to i, because a slice of the
+			 * original string starting at i is passed in */
+			j = strings.IndexRune(s[i:], '>')
+			if j == -1 || j <= 1 {
+				return //malformed doc, missing close tag or empty tag
+			}
+			j++ /* include closing > */
+		} else {
+			j = strings.IndexRune(s[i:], '<')
+			if j == -1 {
+				tokens <- s[i:]
+				return
+			}
+		}
+		tokens <- s[i:i + j]
+		i += j
 	}
-	return f
 }
 
 func parse(s string) doc.Document {
-	//var document []*doc.DecoratedText
+	tokens := make(chan string)
+	/* 'go' spawns a seperate "goroutine" to run a function */
+	go tokens2chan(s, tokens)
+
 	var document doc.Document
 	
 	var context doc.Stack
 	var current doc.Decoration = doc.DefaultDecoration()
 	
-	text := ""
-	
-	for i:=0; i<len(s); i++ {
-		
-		if s[i]!='<' {
-			text += string(s[i])
-		} else {
-			fmt.Println("text: '"+text+"'")
-			if len(text)>0 {
-				document.Parts = append(document.Parts, doc.NewDecoratedText(current, text))
-			}
-			text =""
-			
-			token := ""
-			isEndToken := false
-			
-			i = i+1
-			if s[i]=='/' {
-				isEndToken = true
-				i=i+1
-			}
-			
-			for ; i<len(s) && s[i]!='>'; i++ {
-				token += string(s[i])
-			}
-			
-			if isEndToken==true {
-				if context.Empty()==false {
+	/* 'range' over a channel reads from the chan until it is closed */
+	for token := range tokens {
+		fmt.Println("token:", token)
+		if token[0] == '<' {
+			tag := token[1:len(token) - 1]
+			if tag[0] == '/' {
+				if !context.Empty() {
 					current = context.Pop()
 				}
 			} else {
 				context.Push(current)
-				current = current.Apply(token)
+				current = current.Apply(tag)
 			}
-			fmt.Println("token: '"+ChooseStr(isEndToken==true,"/","")+token+"'")
+		} else {
+			document.Parts = append(document.Parts, doc.NewDecoratedText(current, token))
 		}
 	}
 	return document
